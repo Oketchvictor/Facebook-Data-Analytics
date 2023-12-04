@@ -1,0 +1,397 @@
+---
+title: "Facebook"
+author: "User"
+date: "2023-10-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# loading the required libraries
+library(MASS)
+library(broom)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(survey)
+library(readr)
+library(readxl)
+library(arsenal)
+library(AER)
+
+```
+
+
+Import the facebook data set first
+```{r, include=FALSE}
+library(readxl)
+Facebook <- read_excel("C:/Users/User/Desktop/2149634_Facebook.csv")
+View(Facebook)
+```
+
+Create Categorical Variables
+```{r}
+#Create Categorical Variables
+Facebook$Product = rep(0, nrow(Facebook))
+Facebook$Product[Facebook$Category=="product"] = 1
+Facebook$Inspiration = rep(0, nrow(Facebook))
+Facebook$Inspiration[Facebook$Category=="inspiration"] = 1
+Facebook$Photo = rep(0, nrow(Facebook))
+Facebook$Photo[Facebook$Type=="Photo"] = 1
+Facebook$Status = rep(0, nrow(Facebook))
+Facebook$Status[Facebook$Type =="Status"] = 1
+Facebook$Video = rep(0, nrow(Facebook))
+Facebook$Video[Facebook$Type=="Video"] = 1
+
+```
+
+Remove Infinities
+```{r}
+#Remove Infinities
+Facebook$Share2 <- ifelse(Facebook$Share == 0, 0.00001, Facebook$Share)
+
+```
+
+Transform Variables
+```{r}
+#Transform Variables
+Facebook$log_LifetimePostTotalReach = log(Facebook$LifetimePostTotalReach)
+Facebook$SquareRoot_LifetimePostTotalReach = (Facebook$LifetimePostTotalReach)^(1/2)
+Facebook$log_LifetimePostReachByLiked = log(Facebook$LifetimePostReachByLiked)
+Facebook$log_Share2 = log(Facebook$Share2)
+
+
+```
+
+Model Before Transformations
+```{r}
+#Model Before Transformations
+modelBeforeTransporation = lm(LifetimePostTotalReach ~ Paid + Product + Inspiration
+ + LifetimePostReachByLiked + Share, data=Facebook)
+
+```
+
+Final Model
+```{r}
+#Final Model
+modelFacebook = lm(log_LifetimePostTotalReach ~ Paid + Product + Inspiration
+ + log_LifetimePostReachByLiked + log_Share2, data=Facebook)
+plot(residuals(modelFacebook))
+abline(h=0, col="red", lty=2)
+
+```
+
+Residual Plot
+```{r}
+#Residual Plot
+plot(fitted(modelFacebook), residuals(modelFacebook),
+ ylab="Residuals", xlab="Fitted Values", 
+ main="Residual Plot: \n Residuals vs. Fitted")
+abline(h=0, col="red", lty=2)
+
+```
+
+```{r}
+#Does not have constant variation
+#Normal Q-Q Plot
+qqnorm(residuals(modelFacebook))
+qqline(residuals(modelFacebook), col="red", lty=2)
+
+```
+
+Collinearity
+```{r}
+#Collinearity
+library(car)
+vif(modelFacebook)
+summary(modelFacebook)
+
+```
+
+EDA
+```{r}
+#EDA
+plot(Facebook$log_LifetimePostReachByLiked, Facebook$log_LifetimePostTotalReach, 
+ xlab="LifetimePostReachByLiked",
+ ylab="LifetimePostTotalReach", 
+ main="LifetimePostReachByLiked vs. LifetimePostTotalReach",
+ pch=9, col="violet")
+
+```
+
+```{r}
+#EDA
+plot(Facebook$log_Share2, Facebook$log_LifetimePostTotalReach, 
+ xlab="log_Share2",
+ ylab="log_LifetimePostTotalReach", 
+ main="log_Share2 vs. log_LifetimePostTotalReach",
+ pch=9, col="violet")
+```
+
+Categorical Plot (Paid vs. LifetimePostTotalReach)
+
+```{r}
+#EDA
+# Categorical Plot
+boxplot(Facebook$LifetimePostTotalReach ~ Facebook$Paid, 
+        xlab = "Paid",
+        ylab = "Total Interactions",
+        main = "Paid vs. LifetimePostTotalReach",
+        col = c("lightblue", "lightgreen"))
+
+
+```
+
+
+Histogram Plot (Share2)
+```{r}
+#EDA
+# Histogram Plot
+hist(Facebook$Share2,
+     xlab = "Share2",
+     main = "Distribution of Share2 (Without Log)",
+     col = "lightblue",
+     breaks = 20)
+
+
+```
+
+
+Numerical Summary (Without Log Transformations):
+```{r}
+
+# Summary Statistics
+summary(Facebook$Share2[Facebook$Paid == 0])  # Unpaid Posts
+summary(Facebook$Share2[Facebook$Paid == 1])  # Paid Posts
+
+
+```
+
+Graphing Independent Variables Individually with Numerical Summary:
+
+LifetimePostTotalReach
+```{r}
+# Histogram Plot for LifetimePostTotalReach
+hist(Facebook$LifetimePostTotalReach, 
+     xlab = "LifetimePostTotalReach",
+     main = "Distribution of LifetimePostTotalReach (Without Log)",
+     col = "lightblue", 
+     breaks = 20)
+
+
+```
+
+
+Numerical Summary for LifetimePostTotalReach:
+
+```{r}
+summary(Facebook$LifetimePostTotalReach)
+
+
+```
+
+
+
+Paid (Categorical Variable)
+```{r}
+# Barplot for Paid (Categorical Variable)
+barplot(table(Facebook$Paid), 
+        xlab = "Paid",
+        ylab = "Frequency",
+        main = "Distribution of Paid Posts",
+        col = "lightgreen")
+
+
+```
+
+
+Numerical Summary for Paid (Categorical Variable):
+
+```{r}
+table(Facebook$Paid)
+
+
+```
+
+
+
+Graphing Independent Variables Against Dependent Variable:
+
+LifetimePostTotalReach vs. LifetimePostReachByLiked
+```{r}
+# Scatterplot for LifetimePostTotalReach vs. LifetimePostReachByLiked (Without Log)
+plot(Facebook$LifetimePostTotalReach, Facebook$LifetimePostReachByLiked, 
+     xlab = "LifetimePostTotalReach",
+     ylab = "LifetimePostReachByLiked",
+     main = "LifetimePostTotalReach vs. LifetimePostReachByLiked",
+     pch = 9, col = "violet")
+
+
+```
+
+
+
+Graphing Log-Transformed Independent Variables Against Log-Transformed Dependent Variable:
+
+log(LifetimePostTotalReach) vs. log(LifetimePostReachByLiked)
+```{r}
+# Scatterplot for log(LifetimePostTotalReach) vs. log(LifetimePostReachByLiked)
+plot(log(Facebook$LifetimePostTotalReach), log(Facebook$LifetimePostReachByLiked), 
+     xlab = "log(LifetimePostTotalReach)",
+     ylab = "log(LifetimePostReachByLiked)",
+     main = "log(LifetimePostTotalReach) vs. log(LifetimePostReachByLiked)",
+     pch = 9, col = "violet")
+
+
+```
+
+
+Exploratory Data Analysis
+```{r}
+# Scatterplot for LifetimePostTotalReach vs Paid
+plot(Facebook$LifetimePostTotalReach, Facebook$Paid, 
+     xlab = "LifetimePostTotalReach",
+     ylab = "Paid",
+     main = "LifetimePostTotalReach vs Paid",
+     pch = 9, col = "violet")
+
+# Scatterplot for LifetimePostTotalReach vs Product
+plot(Facebook$LifetimePostTotalReach, Facebook$Category == 2, 
+     xlab = "LifetimePostTotalReach",
+     ylab = "Product",
+     main = "LifetimePostTotalReach vs Product",
+     pch = 9, col = "violet")
+
+# Scatterplot for LifetimePostTotalReach vs Inspiration
+plot(Facebook$LifetimePostTotalReach, Facebook$Category == 3, 
+     xlab = "LifetimePostTotalReach",
+     ylab = "Inspiration",
+     main = "LifetimePostTotalReach vs Inspiration",
+     pch = 9, col = "violet")
+
+# Scatterplot for LifetimePostTotalReach vs LifetimePostReachByLiked
+plot(Facebook$LifetimePostTotalReach, Facebook$LifetimePostReachByLiked, 
+     xlab = "LifetimePostTotalReach",
+     ylab = "LifetimePostReachByLiked",
+     main = "LifetimePostTotalReach vs LifetimePostReachByLiked",
+     pch = 9, col = "violet")
+
+# Scatterplot for LifetimePostTotalReach vs Share
+plot(Facebook$LifetimePostTotalReach, Facebook$Share, 
+     xlab = "LifetimePostTotalReach",
+     ylab = "Share",
+     main = "LifetimePostTotalReach vs Share",
+     pch = 9, col = "violet")
+
+# Scatterplot for log(LifetimePostTotalReach) vs log(LifetimePostReachByLiked)
+plot(log(Facebook$LifetimePostTotalReach), log(Facebook$LifetimePostReachByLiked), 
+     xlab = "log(LifetimePostTotalReach)",
+     ylab = "log(LifetimePostReachByLiked)",
+     main = "log(LifetimePostTotalReach) vs log(LifetimePostReachByLiked)",
+     pch = 9, col = "violet")
+
+# Scatterplot for log(LifetimePostTotalReach) vs log(Share)
+plot(log(Facebook$LifetimePostTotalReach), log(Facebook$Share), 
+     xlab = "log(LifetimePostTotalReach)",
+     ylab = "log(Share)",
+     main = "log(LifetimePostTotalReach) vs log(Share)",
+     pch = 9, col = "violet")
+
+
+# Barplot for Paid (Categorical Variable)
+barplot(table(Facebook$Paid), 
+        xlab = "Paid",
+        ylab = "Frequency",
+        main = "Distribution of Paid Posts",
+        col = "lightgreen")
+
+
+# Barplot for Product (Categorical Variable)
+barplot(table(Facebook$Category == 2), 
+        xlab = "Product",
+        ylab = "Frequency",
+        main = "Distribution of Product Posts",
+        col = "lightblue")
+
+
+# Histogram Plot for LifetimePostReachByLiked
+hist(Facebook$LifetimePostReachByLiked,
+     xlab = "LifetimePostReachByLiked",
+     main = "Distribution of LifetimePostReachByLiked (Without Log)",
+     col = "lightgreen",
+     breaks = 20)
+
+# Histogram Plot for Share
+hist(Facebook$Share,
+     xlab = "Share",
+     main = "Distribution of Share (Without Log)",
+     col = "lightblue",
+     breaks = 20)
+
+# Histogram Plot for LifetimePostTotalReach
+hist(Facebook$LifetimePostTotalReach, 
+     xlab = "LifetimePostTotalReach",
+     main = "Distribution of LifetimePostTotalReach (Without Log)",
+     col = "lightblue", 
+     breaks = 20)
+
+
+
+
+# Numerical Summary for Paid
+table(Facebook$Paid)
+
+# Numerical Summary for Product
+table(Facebook$Category == 2)
+
+# Numerical Summary for Inspiration
+table(Facebook$Category == 3)
+
+# Numerical Summary for LifetimePostReachByLiked
+summary(Facebook$LifetimePostReachByLiked)
+
+# Numerical Summary for Share
+summary(Facebook$Share)
+
+# Numerical Summary for Log LifetimePostTotalReach
+summary(log(Facebook$LifetimePostTotalReach))
+
+# Numerical Summary for Log LifetimePostReachByLiked
+summary(log(Facebook$LifetimePostReachByLiked))
+
+# Numerical Summary for Log Share
+summary(log(Facebook$Share))
+
+# Numerical Summary for Paid
+table(Facebook$Paid)
+
+# Numerical Summary for Product
+table(Facebook$Category == 2)
+
+# Numerical Summary for LifetimePostReachByLiked
+summary(Facebook$LifetimePostReachByLiked)
+
+# Numerical Summary for Share
+summary(Facebook$Share)
+
+# Numerical Summary for LifetimePostTotalReach
+summary(Facebook$LifetimePostTotalReach)
+
+```
+
+
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
